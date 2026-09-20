@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "source": "LanVibes local agent — synthetic example",
+  "os": "macOS",
+  "capturedAt": "2026-09-17T15:00:00Z",
+  "adapters": [
+    { "name": "en0", "id": "en0", "status": "Up", "type": "Wireless80211", "addresses": ["192.0.2.55"], "gateways": ["192.0.2.1"], "dnsServers": ["192.0.2.1"], "dnsSuffix": "" },
+    { "name": "utun4", "id": "utun4", "status": "Up", "type": "Tunnel", "addresses": ["198.51.100.55"], "gateways": [], "dnsServers": [], "dnsSuffix": "" }
+  ],
+  "resolvers": [
+    { "kind": "resolver", "domain": null, "interface": null, "nameServers": ["192.0.2.1"], "searchDomains": [], "flags": "Request A records", "order": 200000 },
+    { "kind": "supplemental", "domain": "corp.example", "interface": "utun4", "nameServers": ["198.51.100.53", "198.51.100.54"], "searchDomains": ["corp.example"], "flags": "Supplemental", "order": 100200 },
+    { "kind": "scoped", "domain": null, "interface": "en0", "nameServers": ["192.0.2.1"], "searchDomains": [], "flags": "Scoped", "order": 200000 }
+  ],
+  "nrpt": [],
+  "warnings": ["Synthetic test data only. IPs are documentation-only ranges, not live DNS servers."]
+}

@@ -1,0 +1,40 @@
+{
+  "targets": [
+    {
+      "id": "public",
+      "name": "Public internet",
+      "url": "https://example.com/",
+      "corporate": false
+    }
+  ],
+  "directDnsName": "example.com",
+  "pingTargetId": "public",
+  "legacyDnsServers": [],
+  "publicIpv4": [
+    "https://api.ipify.org?format=json",
+    "https://ipv4.icanhazip.com/"
+  ],
+  "publicIpv6": [
+    "https://api6.ipify.org?format=json",
+    "https://ipv6.icanhazip.com/"
+  ],
+  "latencyEndpoints": [
+    "https://speed.cloudflare.com/__down?bytes=1",
+    "https://dns.google/resolve?name=example.com&type=A"
+  ],
+  "includeLegacyDnsPlaceholders": false,
+  "doh": [
+    "https://dns.google/resolve",
+    "https://cloudflare-dns.com/dns-query"
+  ],
+  "webSockets": [
+    "wss://ws.postman-echo.com/raw",
+    "wss://echo.websocket.events"
+  ],
+  "downloadUrl": "https://speed.cloudflare.com/__down?bytes=20000000",
+  "uploadUrl": "https://speed.cloudflare.com/__up",
+  "portalUrl": null,
+  "portalExpectedStatus": 204,
+  "portalExpectedBody": "",
+  "managedDnsServers": []
+}

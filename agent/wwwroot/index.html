@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/svg+xml" href="/lanvibes.svg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LanVibes - Local Network Health Checker</title>
+<style>
+  :root{
+    --green:#1fa971;
+    --yellow:#f0b429;
+    --red:#e55353;
+    --muted:#8a8f98;
+    --bg:#0f1216;
+    --card:#151a21;
+    --text:#e6ebf0;
+    --subtle:#b9c0c8;
+    --border:#242b34;
+    --pill:#1d232b;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  .page-wrap{display:block;width:920px;max-width:100%;margin:0 auto;padding:28px 32px;box-sizing:border-box}
+  .container{width:100%;box-sizing:border-box}
+  h1{margin:0;font-size:22px;font-weight:700}
+  p.subtitle{margin:0 0 16px 0;color:var(--subtle)}
+  
+  button{
+    background:#2a323d;color:#fff;border:1px solid var(--border);
+    padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600
+  }
+  button:hover{background:#303947}
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:24px
+  }
+  .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 12px}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .brand-mark{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;flex-shrink:0;border-radius:13px;background:linear-gradient(135deg,#0a66c2,#23a7bd);color:#fff;font-weight:800;font-size:18px;letter-spacing:-.06em;border:1px solid rgba(255,255,255,.16)}
+  .summary .overall{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:15px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--muted)}
+  .summary .overall .dot{width:12px;height:12px}
+  .ok .dot,.dot.ok{background:var(--green)}
+  .warn .dot,.dot.warn{background:var(--yellow)}
+  .fail .dot,.dot.fail{background:var(--red)}
+  .pending .dot,.dot.pending{background:var(--muted)}
+  .overall .label{font-weight:700}
+  .kid-summary{
+    margin:0 0 12px 0;
+    padding:10px 12px;
+    border-radius:10px;
+    background:var(--pill);
+    border:1px solid var(--border);
+    color:var(--text);
+    text-align:center;
+    font-size:16px
+  }
+  .grid{
+    display:grid;grid-template-columns:1fr;gap:10px
+  }
+  @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+  .test{
+    background:var(--pill);border:1px solid var(--border);
+    border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px
+  }
+  .test-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  #customResultsGroup{margin-top:16px}
+  #customResultsGroup[hidden]{display:none}
+  .custom-summary-counts{flex-basis:100%;font-size:13px;line-height:1.6}
+  .custom-result > summary{cursor:pointer;list-style:none}
+  .custom-result > summary::-webkit-details-marker{display:none}
+  .custom-result > summary::before{content:'▸';flex-shrink:0}
+  .custom-result[open] > summary::before{content:'▾'}
+  .custom-result > summary > strong{flex:1;min-width:0;overflow-wrap:anywhere}
+  .custom-result > summary:focus-visible{outline:2px solid #4a9eff;outline-offset:4px}
+  .custom-result > .details{margin-top:12px}
+  .name{font-weight:700;min-width:0;word-break:break-word}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;flex-shrink:0;
+    padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161c;color:var(--subtle)
+  }
+  .pill.ok{color:#d9fff2;border-color:#1f4739;background:rgba(31,169,113,.12)}
+  .pill.warn{color:#fff6db;border-color:#5a461d;background:rgba(240,180,41,.12)}
+  .pill.fail{color:#ffe0e0;border-color:#5a2323;background:rgba(229,83,83,.12)}
+  .pill.pending{color:#cfd6df}
+  .details{color:var(--subtle);font-size:13px;line-height:1.25;overflow-wrap:break-word;word-break:break-word;white-space:pre-wrap}
+  .footnote{color:var(--subtle);font-size:12px;margin-top:12px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .group-section{grid-column:1/-1;border-radius:12px;border:1px solid var(--border);margin-bottom:6px;overflow:hidden}
+  .group-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none;border:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;width:100%;text-align:left;background:transparent}
+  .group-header:hover{filter:brightness(1.2)}
+  .group-chevron{transition:transform .2s;font-size:14px}
+  .group-section.collapsed .group-chevron{transform:rotate(-90deg)}
+  .group-section.collapsed .group-tests{display:none}
+  .group-tests{display:grid;grid-template-columns:1fr;gap:8px;padding:8px}
+  @media(min-width:720px){.group-tests{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.page-wrap{padding:16px}.page-header{flex-wrap:wrap;gap:8px}.header-right{width:100%}}
+  .group-internet{border-left:3px solid #4a9eff}
+  .group-internet .group-header{background:rgba(74,158,255,.08);color:#4a9eff}
+  .group-network{border-left:3px solid #7c6af7}
+  .group-network .group-header{background:rgba(124,106,247,.08);color:#9d8ef9}
+  .group-speed{border-left:3px solid #f0b429}
+  .group-speed .group-header{background:rgba(240,180,41,.08);color:#f0b429}
+  .group-corp{border-left:3px solid #4db6ac}
+  .group-corp .group-header{background:rgba(77,182,172,.08);color:#4db6ac}
+  .test-desc{font-size:12px;color:var(--subtle);line-height:1.45;padding:2px 0}
+  .test-info{font-size:11px;color:var(--muted);padding-top:6px;border-top:1px solid var(--border);margin-top:6px;display:none;line-height:1.55}
+  .test-info.open{display:block}
+  .test-info code{background:rgba(255,255,255,.07);padding:1px 4px;border-radius:3px;font-family:ui-monospace,monospace;font-size:10px;word-break:break-all}
+  .info-btn{float:right;margin-left:8px;cursor:pointer;color:var(--muted);font-size:13px;background:none;border:none;padding:0;line-height:1;vertical-align:middle}
+  .info-btn:hover{color:var(--subtle)}
+  .action-summary{
+    padding:14px 16px;border-radius:10px;
+    background:var(--pill);border:1px solid var(--border);
+    margin:0 0 12px;
+  }
+  .run-progress{margin-top:14px}
+  .progress-heading{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:7px}
+  .run-progress progress{display:block;width:100%;height:10px;border:0;border-radius:999px;overflow:hidden;appearance:none;background:var(--border);accent-color:#4a9eff}
+  .run-progress progress::-webkit-progress-bar{background:var(--border);border-radius:999px}
+  .run-progress progress::-webkit-progress-value{background:#4a9eff;border-radius:999px;transition:width .2s ease}
+  .run-progress progress::-moz-progress-bar{background:#4a9eff;border-radius:999px}
+  .progress-detail{margin:7px 0 0;font-size:12px;color:var(--subtle);overflow-wrap:anywhere}
+  @media(prefers-reduced-motion:reduce){.run-progress progress::-webkit-progress-value{transition:none}}
+  .action-title{font-weight:600;font-size:15px;margin-bottom:4px}
+  .action-detail{font-size:13px;color:var(--subtle);line-height:1.5}
+  .action-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .action-btn{
+    background:#2a323d;color:#e6ebf0;border:1px solid var(--border);
+    padding:7px 13px;border-radius:8px;cursor:pointer;font-weight:600;
+    font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+  }
+  .action-btn:hover{background:#303947}
+  .action-btn.primary{background:rgba(31,169,113,.18);border-color:#1f4739;color:#d9fff2}
+  .group-dot-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+  .group-dot-item{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap}
+  .group-dot-item .dot{flex-shrink:0;width:10px;height:10px}
+
+  /* Read-only, cross-platform DNS configuration card */
+  .dns-panel{margin:0 0 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .dns-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+  .dns-panel h2{margin:0;font-size:18px}
+  .dns-panel-intro{font-size:12px;color:var(--subtle);line-height:1.5;margin:8px 0 12px}
+  .dns-panel-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dns-panel-actions button,.dns-panel-actions label{font:inherit;font-size:12px;padding:7px 10px;background:#2a323d;color:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer}
+  .dns-banner{font-size:13px;padding:10px 12px;border-radius:8px;background:var(--pill);border:1px solid var(--border);margin-bottom:12px;white-space:pre-wrap}
+  .dns-banner.ok{border-color:#1f4739;color:#d9fff2}.dns-banner.warn{border-color:#5a461d;color:#fff6db}
+  .dns-sections{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr))}
+  .dns-item{background:var(--pill);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:0}
+  .dns-item h3{margin:0 0 6px;font-size:13px;word-break:break-word}
+  .dns-item p{margin:3px 0;color:var(--subtle);font-size:12px;overflow-wrap:anywhere;white-space:pre-wrap}
+  .dns-item .dns-address{font-size:13px;color:var(--text);font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+  .dns-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .dns-subheading{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--subtle);padding-top:5px}
+  .dns-hidden-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{background:var(--pill);color:var(--text);padding:8px}.dns-panel label{display:inline-block;margin:6px}.test details{white-space:pre-wrap}.test summary{cursor:pointer}</style>
+
+</head>
+<body>
+  <div class="page-wrap"><div class="container">
+    <div class="page-header">
+      <div class="header-left">
+        <img class="brand-mark" src="/lanvibes.svg" alt="" width="48" height="48">
+        <h1>LanVibes - Local Network Health Checker</h1>
+      </div>
+      <div class="header-right">
+        <div class="overall pending" id="overallPill">
+          <span class="dot"></span>
+          <span class="label">Overall</span>
+          <span id="overallText" class="mono">Not run</span>
+        </div>
+        <button id="runBtn" disabled>Run network tests</button><button id="stopBtn" disabled>Stop</button>
+        <button id="quitBtn" hidden>Quit LanVibes</button>
+      </div>
+    </div>
+
+      <p id="sessionNote" class="footnote" hidden>LanVibes stops after 5 minutes without local requests. Export your report before quitting. Click on the Quit LanVibes button to exit the application.</p>
+      <div class="action-summary" id="actionSummary">
+        <div class="action-title" id="actionTitle">Local diagnostics ready — network tests not yet run</div>
+        <div class="action-detail" id="actionDetail">DNS configuration loads from this device. External reachability tests only run when you choose Run network tests. Some speed tests send synthetic data to third-party services.</div>
+        <div class="action-btns" id="actionBtns"></div>
+        <div class="run-progress" id="runProgress" hidden>
+          <div class="progress-heading"><span id="progressCount">0 checks finished</span><span id="progressPercent">0%</span></div>
+          <progress id="progressBar" value="0" max="1" aria-label="Diagnostic checks finished" aria-describedby="progressCount progressDetail"></progress>
+          <p class="progress-detail" id="progressDetail" role="status" aria-live="polite">Ready</p>
+          <p class="progress-detail">Progress counts finished checks, including skipped checks—not elapsed time or successful results.</p>
+        </div>
+      </div>
+
+
+      <section id="dnsPanel" class="dns-panel" aria-labelledby="dnsPanelHeading">
+        <div class="dns-panel-head">
+          <h2 id="dnsPanelHeading">Current DNS Configuration</h2>
+          <div class="dns-panel-actions">
+            <button id="dnsRefreshBtn" type="button">Refresh local DNS</button>
+            <button id="dnsShowAllBtn" type="button" hidden aria-pressed="false">Show all adapters</button>
+            <label for="dnsImportFile" role="button" tabindex="0">Import snapshot or report</label>
+            <input id="dnsImportFile" class="dns-hidden-input" type="file" accept=".json,application/json" aria-label="Import DNS snapshot or support report JSON">
+          </div>
+        </div>
+        <p class="dns-panel-intro">Offline-ready: the dashboard and read-only Windows/macOS agent run entirely on this workstation. No VPN or internet is needed to display DNS configuration. Nothing is uploaded automatically. Import a local snapshot as a fallback. Configured DNS is not proof of the resolver used by each query.</p>
+        <div id="dnsBanner" class="dns-banner" role="status" aria-live="polite">Loading this workstation’s DNS configuration…</div>
+        <div id="dnsSections" class="dns-sections"></div>
+      </section>
+
+      <section id="importedReportPanel" class="dns-panel" aria-labelledby="importedReportHeading" hidden>
+        <div class="dns-panel-head">
+          <h2 id="importedReportHeading">Imported support report</h2>
+          <button id="closeImportedReportBtn" type="button">Close report</button>
+        </div>
+        <p id="importedReportInfo" class="dns-panel-intro" role="status"></p>
+        <nav aria-label="Imported report pages"><button id="importedPrevBtn" type="button">Previous saved results</button> <span id="importedPageInfo"></span> <button id="importedNextBtn" type="button">Next saved results</button></nav>
+        <div id="importedReportResults" class="grid"></div>
+      </section>
+
+      <section class="dns-panel" aria-label="Run options">
+  <div>Import custom applications <button id="chooseTargetsBtn" type="button">Choose file</button> <span id="targetFileName" role="status" aria-live="polite">No file chosen</span><input id="targetImportFile" class="dns-hidden-input" tabindex="-1" aria-label="Import custom applications file" type="file" accept=".json,.txt"></div>
+  <button id="clearTargetsBtn" type="button">Clear custom applications</button>
+  <p class="dns-panel-intro">Import a text file with one HTTPS URL per line, or JSON containing an array of {"name":"Example","url":"https://example.com/","corporate":false}. Maximum 10,000 applications, 32 MB. Use a dns hostname instead of url for DNS-only entries. Markdown-wrapped HTTPS links are accepted. Imports replace the custom list for this tab only. Review below, then choose Run network tests. No tests run during import.</p>
+  <label><input id="customDnsOnly" type="checkbox"> DNS resolution only — run imported applications only; skip all other probes and speed tests</label><p id="targetImportStatus" role="status" aria-live="polite"></p>
+  <details><summary>Review imported applications</summary><ul id="customTargetList"></ul></details>
+  <label>Environment (choose Office or VPN to include internal targets) <select id="profile"><option value="home">Home / off VPN</option><option value="office">Office</option><option value="vpn">VPN</option></select></label>
+  <label><input type="checkbox" id="includeSpeed" checked> Include speed tests (up to 20 MB download + 1 MB synthetic upload)</label>
+  <p class="dns-panel-intro">Baseline checks run before speed tests. Corporate targets are skipped at home. Native connections and browser checks may use different proxy or DNS settings.</p>
+  <button id="systemBtn">Inspect local routes, proxy and link</button>
+  <button id="exportBtn">Export support report</button>
+  <button id="retryBtn" type="button" disabled>Retry failed / inconclusive</button>
+  <p class="dns-panel-intro">Retry uses the current environment and speed-test settings and retains other results. Search filters do not limit retries.</p>
+  <p class="dns-panel-intro">Exports the displayed DNS configuration and all collected test results, details and timings for your support team. Import the report later to review the saved results. Reports are downloaded locally, never uploaded.</p>
+</section>
+<details class="test custom-result">
+  <summary class="test-head"><strong>Compare two runs</strong></summary>
+  <p>Choose earlier and later support reports, or use the current results as the later run. Comparison is local and runs no diagnostics. Tests match by exact name, including URL and test mode; renamed tests appear as added or missing. Timings are not compared.</p>
+  <div><button id="chooseBeforeBtn" type="button">Choose earlier report</button> <span id="compareBeforeName">No report selected</span><input id="compareBeforeFile" class="dns-hidden-input" tabindex="-1" type="file" accept=".json" aria-label="Earlier support report"></div>
+  <div><button id="chooseAfterBtn" type="button">Choose later report</button> <span id="compareAfterName">No report selected</span><input id="compareAfterFile" class="dns-hidden-input" tabindex="-1" type="file" accept=".json" aria-label="Later support report"> <button id="compareCurrentBtn" type="button">Use current results as later run</button></div>
+  <button id="compareBtn" type="button">Compare reports</button>
+  <p id="compareInfo" role="status" aria-live="polite"></p>
+  <details id="compareDnsDifference" hidden><summary>Changed DNS configuration (earlier → later)</summary><pre id="compareDnsBefore" class="details"></pre><pre id="compareDnsAfter" class="details"></pre></details>
+  <nav aria-label="Comparison pages"><button id="comparePrevBtn" type="button">Previous changes</button> <span id="comparePageInfo"></span> <button id="compareNextBtn" type="button">Next changes</button></nav>
+  <div id="compareRows" class="grid"></div>
+</details>
+<section aria-label="Filter results"><label>Search application or hostname <input id="resultSearch" type="search"></label> <label>Status <select id="resultStatus"><option value="all">All statuses</option><option value="problem">Failed or inconclusive</option><option value="pass">Succeeded</option><option value="fail">Failed</option><option value="inconclusive">Inconclusive</option><option value="not-applicable">Skipped</option><option value="cancelled">Cancelled</option><option value="not-run">Not run</option></select></label><p id="filterInfo" role="status"></p></section>
+<div class="grid" id="testsGrid" aria-live="polite"></div>
+<details id="customResultsGroup" class="test custom-result" hidden>
+  <summary class="test-head"><strong id="customResultsTitle">Custom application tests</strong><span>Expand for full details</span><span id="customResultsCounts" class="custom-summary-counts" aria-live="polite"></span></summary>
+  <div class="details">
+    <nav aria-label="Custom test result pages"><button id="resultsPrevBtn" type="button">Previous results</button> <span id="resultsPageInfo"></span> <button id="resultsNextBtn" type="button">Next results</button></nav>
+    <div class="grid" id="customResultsGrid"></div>
+  </div>
+</details>
+
+    </div>
+  </div>
+
+<script type="module" src="/app.mjs"></script>
+</body>
+</html>
+
+    

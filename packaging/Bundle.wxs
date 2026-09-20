@@ -1,0 +1,12 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle Name="LanVibes" Manufacturer="LanVibes" Version="$(var.Version)" UpgradeCode="B43ED129-33FD-4353-9C85-0481D627907F" IconSourceFile="$(var.Assets)/lanvibes.ico">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLargeLicense" LicenseUrl="" SuppressOptionsUI="yes" ShowVersion="yes" LogoFile="$(var.Assets)/lanvibes.png" />
+    </BootstrapperApplication>
+    <bal:Condition Message="LanVibes requires 64-bit Windows on an x64 or ARM64 processor." Condition="NativeMachine = 34404 OR NativeMachine = 43620" />
+    <Chain>
+      <MsiPackage Id="LanVibesX64" SourceFile="$(var.Dist)/LanVibes-$(var.Version)-win-x64-$(var.SigningLabel).msi" InstallCondition="NativeMachine = 34404" Compressed="yes" Vital="yes" />
+      <MsiPackage Id="LanVibesArm64" SourceFile="$(var.Dist)/LanVibes-$(var.Version)-win-arm64-$(var.SigningLabel).msi" InstallCondition="NativeMachine = 43620" Compressed="yes" Vital="yes" />
+    </Chain>
+  </Bundle>
+</Wix>

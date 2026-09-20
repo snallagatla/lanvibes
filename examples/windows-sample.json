@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "source": "LanVibes local agent — synthetic example",
+  "os": "Windows",
+  "capturedAt": "2026-09-17T15:00:00Z",
+  "adapters": [
+    { "name": "Wi-Fi", "id": "example-guid-1", "status": "Up", "type": "Wireless80211", "addresses": ["192.0.2.33"], "gateways": ["192.0.2.1"], "dnsServers": ["192.0.2.1"], "dnsSuffix": "" },
+    { "name": "Example VPN", "id": "example-guid-2", "status": "Up", "type": "Ethernet", "addresses": ["198.51.100.99"], "gateways": [], "dnsServers": ["198.51.100.53", "198.51.100.54"], "dnsSuffix": "corp.example" }
+  ],
+  "resolvers": [],
+  "nrpt": [ { "namespace": ".corp.example", "nameServers": ["198.51.100.53", "198.51.100.54"] } ],
+  "warnings": ["Synthetic test data only. IPs are documentation-only ranges, not live DNS servers."]
+}

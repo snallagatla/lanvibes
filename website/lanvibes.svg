@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>LanVibes</title>
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="#102639"/>
+  <path d="M128 148V340H230" fill="none" stroke="#5EF0C1" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M240 176L310 340L396 148" fill="none" stroke="#65BFFF" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="128" cy="148" r="28" fill="#5EF0C1"/>
+  <circle cx="396" cy="148" r="28" fill="#65BFFF"/>
+</svg>

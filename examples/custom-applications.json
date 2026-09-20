@@ -1,0 +1,6 @@
+[
+  { "name": "Example application", "url": "[https://example.com/](https://example.com/)", "corporate": false },
+  { "name": "Private portal (replace before testing)", "url": "https://portal.corp.example/", "corporate": true },
+  { "name": "Private DNS only (replace before testing)", "dns": "portal.corp.example", "corporate": true },
+  { "name": "Example URL DNS only", "url": "https://example.org/", "mode": "dns", "corporate": false }
+]
