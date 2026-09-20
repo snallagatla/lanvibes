@@ -1,4 +1,4 @@
-# LanVibes — offline-first workstation network diagnostics
+# LanVibes - Local Network Health Checker
 
 LanVibes serves a local dashboard and read-only workstation configuration from a .NET 10 agent. Windows/macOS launches open the default browser on an authenticated random loopback port. Explicit `--headless` hosting uses **http://127.0.0.1:17891/** by default. Startup contacts only the local agent; external diagnostics run only after **Run network tests**.
 
