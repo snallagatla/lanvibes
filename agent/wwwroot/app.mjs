@@ -7,13 +7,29 @@ let customTargets = [];
 let importedReport = null, importedPage = 0;
 let rowPage = 0, rowTests = [], rowsShowResults = true;
 const PAGE_SIZE = 100, resultIndexes = new Map(), visibleRows = new Set();
-let customCounts = {};
+let customCounts = {}, summaryCounts = {};
+function renderSummaryCounts() {
+  const unrun = summaryCounts['not-run'] || 0;
+  if (unrun === tests.length) { $('resultsSummary').textContent = tests.length ? `${tests.length} checks ready to run.` : 'Import applications to run DNS-only checks.'; return; }
+  const counts = [`${summaryCounts.pass || 0} succeeded`, `${summaryCounts.fail || 0} failed`, `${summaryCounts.inconclusive || 0} inconclusive`];
+  for (const [status, label] of [['not-applicable', 'skipped'], ['cancelled', 'cancelled'], ['pending', 'running'], ['not-run', 'not run']])
+    if (summaryCounts[status]) counts.push(`${summaryCounts[status]} ${label}`);
+  $('resultsSummary').textContent = counts.join(' · ');
+}
+function renderScope() {
+  $('runScope').textContent = $('customDnsOnly').checked ? 'DNS resolution only: imported applications; no speed tests.' : `Standard checks and imported applications. ${$('includeSpeed').checked ? 'Speed tests included (up to 20 MB download + 1 MB synthetic upload to public services).' : 'Speed tests excluded.'}`;
+}
+
 function renderCustomSummary() {
   $('customResultsCounts').textContent = `${rowTests.length} applications · ${customCounts.pass || 0} succeeded · ${customCounts.fail || 0} failed · ${customCounts.inconclusive || 0} inconclusive · ${customCounts['not-applicable'] || 0} skipped · ${customCounts.cancelled || 0} cancelled · ${customCounts.pending || 0} running · ${customCounts['not-run'] || 0} not run`;
 }
 const $ = id => document.getElementById(id);
 const colors = { pass: 'ok', fail: 'fail', inconclusive: 'warn', pending: 'pending', cancelled: 'pending', 'not-applicable': 'pending' };
 const labels = { pass: 'Pass', fail: 'Fail', inconclusive: 'Inconclusive', pending: 'Pending', cancelled: 'Cancelled', 'not-applicable': 'Not applicable' };
+$('advancedMode').addEventListener('change', () => {
+  $('dashboard').setAttribute('data-advanced', String($('advancedMode').checked));
+});
+$('includeSpeed').addEventListener('change', renderScope);
 const coordinator = new RunCoordinator();
 let config, snapshot, source = 'Local agent', showAll = false, tests = [], results = [], idleBaseline = null;
 let dnsGeneration = 0, dnsController, systemController;
@@ -79,7 +95,7 @@ function el(tag, text, className) {
   if (className) node.className = className;
   return node;
 }
-function banner(message, severity = 'warn') { $('dnsBanner').textContent = message; $('dnsBanner').className = `dns-banner ${severity}`; }
+function banner(message, severity = 'warn') { $('localNotice').hidden = severity !== 'warn'; $('localNotice').textContent = message; $('dnsBanner').textContent = message; $('dnsBanner').className = `dns-banner ${severity}`; }
 function renderSnapshot() {
   if (!snapshot) return;
   const fragment = document.createDocumentFragment();
@@ -101,7 +117,8 @@ function renderSnapshot() {
   for (const warning of snapshot.warnings) add('Collection limitation', warning);
   $('dnsSections').replaceChildren(fragment);
   const age = Date.now() - Date.parse(snapshot.capturedAt);
-  banner(`${snapshot.os} · ${source} · Captured ${new Date(snapshot.capturedAt).toLocaleString()}${age > 300000 ? ' · More than 5 minutes old' : ''}\nConfigured candidates do not prove which resolver processed a query.`, snapshot.warnings.length || age > 300000 ? 'warn' : 'ok');
+  banner(`${snapshot.os} · ${source} · Captured ${new Date(snapshot.capturedAt).toLocaleString()}${age > 300000 ? ' · More than 5 minutes old' : ''} · Configured DNS servers; actual resolver may vary.`, snapshot.warnings.length || age > 300000 ? 'warn' : 'ok');
+  $('localNotice').textContent = snapshot.warnings.length ? 'Some DNS information is unavailable. See Current DNS Configuration.' : age > 300000 ? 'DNS snapshot is over 5 minutes old. Choose Refresh local DNS.' : '';
 }
 async function refreshDns(manual = false) {
   if (sessionEnded || (manual && !await prepareAction())) return;
@@ -172,6 +189,12 @@ document.querySelector('label[for="dnsImportFile"]').addEventListener('keydown',
 });
 function buildRows(showResults = rowsShowResults) {
   rowsShowResults = showResults;
+  summaryCounts = {};
+  for (const test of tests) {
+    const status = showResults ? resultFor(test)?.status ?? 'not-run' : 'not-run';
+    summaryCounts[status] = (summaryCounts[status] || 0) + 1;
+  }
+  renderSummaryCounts(); renderScope();
   rowTests = tests.filter(test => test.custom);
   visibleRows.clear();
   $('testsGrid').replaceChildren();
@@ -223,6 +246,10 @@ function display(test, value) {
   }
   const record = { ...value, id: test.id, name: test.name, informational: !!test.informational,
     ...(value.status !== 'pending' ? { observedAt: new Date().toISOString() } : {}) };
+  const previousStatus = rowsShowResults ? resultFor(test)?.status ?? 'not-run' : 'not-run';
+  summaryCounts[previousStatus] = (summaryCounts[previousStatus] || 0) - 1;
+  summaryCounts[value.status] = (summaryCounts[value.status] || 0) + 1;
+  renderSummaryCounts();
   const index = resultIndexes.get(test.id);
   if (test.custom) {
     const previous = index === undefined ? 'not-run' : results[index].status;
@@ -252,7 +279,7 @@ function summary(running = false) {
   $('overallText').textContent = running ? 'Running' : cancelled ? 'Stopped — incomplete' : labels[state];
   $('actionTitle').textContent = running ? 'Checks running in sequence' : cancelled ? 'Run stopped; completed observations retained' : 'Diagnostic observations ready';
   $('actionDetail').textContent = running ? 'Idle latency is measured before transfers. Stop cancels active requests.' :
-    'Review the stages below. A failed or inconclusive probe does not identify a unique cause. HTTP responses and TLS success do not establish application login health.';
+    'Export the support report to share all results, or enable Advanced to inspect details. Failed or inconclusive checks may need further investigation.';
 }
 function lock(running) {
   $('retryBtn').disabled = running || !config || sessionEnded || !retryCandidates(tests,results).length;
@@ -347,6 +374,7 @@ function configureTests() {
 function updateCustomTargets(value) {
   $('customResultsGroup').open = false;
   customTargets = value;
+  $('clearTargetsBtn').hidden = value.length === 0;
   $('customTargetList').replaceChildren(...value.slice(0, PAGE_SIZE).map(t => el('li', `${t.name} — ${t.url ?? t.dns} (${t.mode === 'dns' ? 'DNS only' : 'DNS/TCP/TLS/HTTP'})${t.corporate ? ' (Office/VPN only)' : ''}`)));
   $('targetImportStatus').textContent = `${value.length} custom applications ready${value.length > PAGE_SIZE ? '; preview shows the first 100' : ''}. Click Run network tests to produce results. Corporate entries require Office or VPN. Previous results remain exportable until the next run.`;
   configureTests();
