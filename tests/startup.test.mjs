@@ -7,7 +7,7 @@ class Node {
   constructor() { this.children = []; this.listeners = {}; this.className = ''; this.textContent = ''; this.disabled = false; this.checked = false; this.value = ''; }
   append(...children) { this.children.push(...children); }
   replaceChildren(...children) { this.children = children; }
-  setAttribute() {}
+  setAttribute(name, value) { this[name] = value; }
   addEventListener(event, fn) { this.listeners[event] = fn; }
   remove() {}
 }
@@ -31,6 +31,20 @@ test('offline startup only fetches local config and DNS; no probes or uploads', 
   assert.deepEqual(calls.map(c => c[0]).sort(), ['/config', '/dns']);
   assert.equal(get('runBtn').disabled, false);
   assert.equal(get('testsGrid').children.length, config.targets.length + 12);
+  assert.match(html, /id="dashboard" data-advanced="false"/);
+  assert.match(html, /id="dnsPanel" class="dns-panel"/);
+  assert.match(html, /#dashboard\[data-advanced="false"\] \.advanced-only/);
+  assert.doesNotMatch(html, /<input[^>]*id="advancedMode"[^>]*checked/);
+  const initialRows = get('testsGrid').children;
+  get('includeSpeed').checked = true;
+  get('advancedMode').checked = true; get('advancedMode').listeners.change();
+  assert.equal(get('dashboard')['data-advanced'], 'true');
+  get('advancedMode').checked = false; get('advancedMode').listeners.change();
+  assert.equal(get('dashboard')['data-advanced'], 'false');
+  assert.equal(get('includeSpeed').checked, true);
+  assert.equal(get('testsGrid').children, initialRows, 'View toggle must not change test coverage or results');
+  assert.equal(calls.length, 2, 'View toggle must not make network requests');
+  assert.match(get('resultsSummary').textContent, /checks ready to run/);
   const importTargets = async text => get('targetImportFile').listeners.change({ target: { files: [{ size: text.length, text: async () => text }], value: 'apps.txt' } });
   await importTargets('https://example.org/app');
   assert.equal(get('customTargetList').children.length, 1);
@@ -40,7 +54,7 @@ test('offline startup only fetches local config and DNS; no probes or uploads', 
   assert.equal(get('customTargetList').children.length, 1);
   get('clearTargetsBtn').listeners.click();
   assert.equal(get('customTargetList').children.length, 0);
-  assert.match(get('dnsBanner').textContent, /Configured candidates/);
+  assert.match(get('dnsBanner').textContent, /Configured DNS servers/);
   globalThis.fetch = async (url, options) => {
     if (url === '/health') return new Response(JSON.stringify({service:'LanVibes DNS Agent',status:'ok'}));
     assert.equal(url, '/system');
@@ -49,6 +63,7 @@ test('offline startup only fetches local config and DNS; no probes or uploads', 
   };
   await get('systemBtn').listeners.click();
   assert.equal(get('status-system').textContent, 'Pass');
+  assert.match(get('resultsSummary').textContent, /1 succeeded/);
   assert.equal(get('runBtn').disabled, false);
   const importFile = async value => {
     const text = JSON.stringify(value);

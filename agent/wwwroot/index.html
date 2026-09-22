@@ -161,11 +161,24 @@
   .dns-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
   .dns-subheading{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--subtle);padding-top:5px}
   .dns-hidden-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
-button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{background:var(--pill);color:var(--text);padding:8px}.dns-panel label{display:inline-block;margin:6px}.test details{white-space:pre-wrap}.test summary{cursor:pointer}</style>
+button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{background:var(--pill);color:var(--text);padding:8px}.dns-panel label{display:inline-block;margin:6px}.test details{white-space:pre-wrap}.test summary{cursor:pointer}
+#dashboard[data-advanced="false"] .advanced-only{display:none!important}
+.view-options{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+#resultsSummary{line-height:1.8;margin:10px 0}
+.action-message{margin:0;font-size:13px;line-height:1.5;color:var(--subtle)}
+.action-message strong{color:var(--text)}
+.run-overview{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.run-overview #resultsSummary{margin:0 0 4px}
+.run-overview #runScope{margin:0;line-height:1.5}
+.application-import{display:grid;gap:10px;margin-bottom:12px}
+.file-picker{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px}
+.file-picker button{flex-shrink:0}
+#targetFileName{min-width:0;overflow-wrap:anywhere;font-size:13px;color:var(--subtle)}
+</style>
 
 </head>
 <body>
-  <div class="page-wrap"><div class="container">
+  <div class="page-wrap"><div class="container" id="dashboard" data-advanced="false">
     <div class="page-header">
       <div class="header-left">
         <img class="brand-mark" src="/lanvibes.svg" alt="" width="48" height="48">
@@ -182,16 +195,17 @@ button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{ba
       </div>
     </div>
 
+      <div class="view-options"><span>Check your connection and share a report with support.</span><label><input id="advancedMode" type="checkbox"> Advanced</label></div>
       <p id="sessionNote" class="footnote" hidden>LanVibes stops after 5 minutes without local requests. Export your report before quitting. Click on the Quit LanVibes button to exit the application.</p>
       <div class="action-summary" id="actionSummary">
-        <div class="action-title" id="actionTitle">Local diagnostics ready — network tests not yet run</div>
-        <div class="action-detail" id="actionDetail">DNS configuration loads from this device. External reachability tests only run when you choose Run network tests. Some speed tests send synthetic data to third-party services.</div>
+        <p class="action-message"><strong id="actionTitle">Network tests not yet run</strong> — <span id="actionDetail">choose Run network tests to check this device’s connection, or import your own application list.</span></p>
         <div class="action-btns" id="actionBtns"></div>
+        <p id="localNotice" class="footnote" role="status" hidden></p>
         <div class="run-progress" id="runProgress" hidden>
           <div class="progress-heading"><span id="progressCount">0 checks finished</span><span id="progressPercent">0%</span></div>
           <progress id="progressBar" value="0" max="1" aria-label="Diagnostic checks finished" aria-describedby="progressCount progressDetail"></progress>
           <p class="progress-detail" id="progressDetail" role="status" aria-live="polite">Ready</p>
-          <p class="progress-detail">Progress counts finished checks, including skipped checks—not elapsed time or successful results.</p>
+          <p class="progress-detail advanced-only">Progress counts finished checks, including skipped checks—not elapsed time or successful results.</p>
         </div>
       </div>
 
@@ -202,16 +216,16 @@ button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{ba
           <div class="dns-panel-actions">
             <button id="dnsRefreshBtn" type="button">Refresh local DNS</button>
             <button id="dnsShowAllBtn" type="button" hidden aria-pressed="false">Show all adapters</button>
-            <label for="dnsImportFile" role="button" tabindex="0">Import snapshot or report</label>
-            <input id="dnsImportFile" class="dns-hidden-input" type="file" accept=".json,application/json" aria-label="Import DNS snapshot or support report JSON">
+            <label class="advanced-only" for="dnsImportFile" role="button" tabindex="0">Import snapshot or report</label>
+            <input id="dnsImportFile" class="dns-hidden-input advanced-only" type="file" accept=".json,application/json" aria-label="Import DNS snapshot or support report JSON">
           </div>
         </div>
-        <p class="dns-panel-intro">Offline-ready: the dashboard and read-only Windows/macOS agent run entirely on this workstation. No VPN or internet is needed to display DNS configuration. Nothing is uploaded automatically. Import a local snapshot as a fallback. Configured DNS is not proof of the resolver used by each query.</p>
+        <p class="dns-panel-intro">DNS settings from this device. No internet required.</p>
         <div id="dnsBanner" class="dns-banner" role="status" aria-live="polite">Loading this workstation’s DNS configuration…</div>
         <div id="dnsSections" class="dns-sections"></div>
       </section>
 
-      <section id="importedReportPanel" class="dns-panel" aria-labelledby="importedReportHeading" hidden>
+      <section id="importedReportPanel" class="dns-panel advanced-only" aria-labelledby="importedReportHeading" hidden>
         <div class="dns-panel-head">
           <h2 id="importedReportHeading">Imported support report</h2>
           <button id="closeImportedReportBtn" type="button">Close report</button>
@@ -222,21 +236,25 @@ button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{ba
       </section>
 
       <section class="dns-panel" aria-label="Run options">
-  <div>Import custom applications <button id="chooseTargetsBtn" type="button">Choose file</button> <span id="targetFileName" role="status" aria-live="polite">No file chosen</span><input id="targetImportFile" class="dns-hidden-input" tabindex="-1" aria-label="Import custom applications file" type="file" accept=".json,.txt"></div>
-  <button id="clearTargetsBtn" type="button">Clear custom applications</button>
-  <p class="dns-panel-intro">Import a text file with one HTTPS URL per line, or JSON containing an array of {"name":"Example","url":"https://example.com/","corporate":false}. Maximum 10,000 applications, 32 MB. Use a dns hostname instead of url for DNS-only entries. Markdown-wrapped HTTPS links are accepted. Imports replace the custom list for this tab only. Review below, then choose Run network tests. No tests run during import.</p>
-  <label><input id="customDnsOnly" type="checkbox"> DNS resolution only — run imported applications only; skip all other probes and speed tests</label><p id="targetImportStatus" role="status" aria-live="polite"></p>
-  <details><summary>Review imported applications</summary><ul id="customTargetList"></ul></details>
-  <label>Environment (choose Office or VPN to include internal targets) <select id="profile"><option value="home">Home / off VPN</option><option value="office">Office</option><option value="vpn">VPN</option></select></label>
-  <label><input type="checkbox" id="includeSpeed" checked> Include speed tests (up to 20 MB download + 1 MB synthetic upload)</label>
-  <p class="dns-panel-intro">Baseline checks run before speed tests. Corporate targets are skipped at home. Native connections and browser checks may use different proxy or DNS settings.</p>
-  <button id="systemBtn">Inspect local routes, proxy and link</button>
+  <div class="run-overview"><div id="resultsSummary" role="status" aria-live="polite">No tests run yet.</div><p id="runScope" class="footnote"></p></div>
+  <div class="application-import"><strong>Import custom applications</strong>
+    <div class="file-picker"><button id="chooseTargetsBtn" type="button">Choose file</button><span id="targetFileName" role="status" aria-live="polite">No file chosen</span></div>
+    <input id="targetImportFile" class="dns-hidden-input" tabindex="-1" aria-label="Import custom applications file" type="file" accept=".json,.txt">
+  </div>
+  <button id="clearTargetsBtn" type="button" hidden>Clear custom applications</button>
+  <details><summary>Supported file formats</summary><p class="dns-panel-intro">Import a text file with one HTTPS URL per line, or JSON containing an array of {"name":"Example","url":"https://example.com/","corporate":false}. Maximum 10,000 applications, 32 MB. Use a dns hostname instead of url for DNS-only entries. Markdown-wrapped HTTPS links are accepted. Imports replace the custom list for this tab only. Review below, then choose Run network tests. No tests run during import.</p></details>
+  <label class="advanced-only"><input id="customDnsOnly" type="checkbox"> DNS resolution only — run imported applications only; skip all other probes and speed tests</label><p id="targetImportStatus" role="status" aria-live="polite"></p>
+  <details class="advanced-only"><summary>Review imported applications</summary><ul id="customTargetList"></ul></details>
+  <label>Location <select id="profile"><option value="home">Home / off VPN</option><option value="office">Office</option><option value="vpn">VPN</option></select></label>
+  <label class="advanced-only"><input type="checkbox" id="includeSpeed" checked> Include speed tests (up to 20 MB download + 1 MB synthetic upload)</label>
+  <p class="dns-panel-intro advanced-only">Home skips internal targets. Browser and local tests may use different DNS or proxy settings.</p>
+  <button class="advanced-only" id="systemBtn">Inspect local routes, proxy and link</button>
   <button id="exportBtn">Export support report</button>
-  <button id="retryBtn" type="button" disabled>Retry failed / inconclusive</button>
-  <p class="dns-panel-intro">Retry uses the current environment and speed-test settings and retains other results. Search filters do not limit retries.</p>
-  <p class="dns-panel-intro">Exports the displayed DNS configuration and all collected test results, details and timings for your support team. Import the report later to review the saved results. Reports are downloaded locally, never uploaded.</p>
+  <button class="advanced-only" id="retryBtn" type="button" disabled>Retry failed / inconclusive</button>
+  <p class="dns-panel-intro advanced-only">Retries failed or inconclusive checks using current settings. Other results are kept.</p>
+  <p class="dns-panel-intro advanced-only">Saves DNS settings and all test details locally for support.</p>
 </section>
-<details class="test custom-result">
+<details class="test custom-result advanced-only">
   <summary class="test-head"><strong>Compare two runs</strong></summary>
   <p>Choose earlier and later support reports, or use the current results as the later run. Comparison is local and runs no diagnostics. Tests match by exact name, including URL and test mode; renamed tests appear as added or missing. Timings are not compared.</p>
   <div><button id="chooseBeforeBtn" type="button">Choose earlier report</button> <span id="compareBeforeName">No report selected</span><input id="compareBeforeFile" class="dns-hidden-input" tabindex="-1" type="file" accept=".json" aria-label="Earlier support report"></div>
@@ -247,9 +265,9 @@ button:disabled{opacity:.5;cursor:default}.header-right{flex-wrap:wrap}select{ba
   <nav aria-label="Comparison pages"><button id="comparePrevBtn" type="button">Previous changes</button> <span id="comparePageInfo"></span> <button id="compareNextBtn" type="button">Next changes</button></nav>
   <div id="compareRows" class="grid"></div>
 </details>
-<section aria-label="Filter results"><label>Search application or hostname <input id="resultSearch" type="search"></label> <label>Status <select id="resultStatus"><option value="all">All statuses</option><option value="problem">Failed or inconclusive</option><option value="pass">Succeeded</option><option value="fail">Failed</option><option value="inconclusive">Inconclusive</option><option value="not-applicable">Skipped</option><option value="cancelled">Cancelled</option><option value="not-run">Not run</option></select></label><p id="filterInfo" role="status"></p></section>
-<div class="grid" id="testsGrid" aria-live="polite"></div>
-<details id="customResultsGroup" class="test custom-result" hidden>
+<section class="advanced-only" aria-label="Filter results"><label>Search application or hostname <input id="resultSearch" type="search"></label> <label>Status <select id="resultStatus"><option value="all">All statuses</option><option value="problem">Failed or inconclusive</option><option value="pass">Succeeded</option><option value="fail">Failed</option><option value="inconclusive">Inconclusive</option><option value="not-applicable">Skipped</option><option value="cancelled">Cancelled</option><option value="not-run">Not run</option></select></label><p id="filterInfo" role="status"></p></section>
+<div class="grid advanced-only" id="testsGrid" aria-live="polite"></div>
+<details id="customResultsGroup" class="test custom-result advanced-only" hidden>
   <summary class="test-head"><strong id="customResultsTitle">Custom application tests</strong><span>Expand for full details</span><span id="customResultsCounts" class="custom-summary-counts" aria-live="polite"></span></summary>
   <div class="details">
     <nav aria-label="Custom test result pages"><button id="resultsPrevBtn" type="button">Previous results</button> <span id="resultsPageInfo"></span> <button id="resultsNextBtn" type="button">Next results</button></nav>
